@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 
 class DbAdapter:
 
-    FUNC_CALLS = ['open', 'new', 'remove']
+    FUNC_CALLS = ['open', 'root', 'new', 'remove']
 
     def __init__(self, init_db=False):
         self.conn = None
@@ -18,11 +18,8 @@ class DbAdapter:
         Initialize the database based uppon a given sql file. 
         Creates user `app` and all required tables, triggers, etc
         """
-        with self.conn.cursor() as cur:
-            cur.execute(open(schema, "r").read())        
-
-    def new(self, user):
-        print("TODO: new")
+        self.conn.cursor().execute(open(schema, "r").read())        
+        self.conn.commit()
 
     def open(self, data):
         """
@@ -30,17 +27,25 @@ class DbAdapter:
         Sample input: 
         { "baza": "student", "login": "init", "password": "qwerty"}
         """
-        
         host = 'localhost' if 'host' not in data else data['host']
-        self.conn = psycopg2.connect(database=data['baza'], 
+        self.conn = psycopg2.connect(database=data['database'], 
                                      user=data['login'], 
                                      password=data['password'],
                                      host=host)
-        if self.init_db:            
-            self.init()                                     
+        if self.init_db:        
+            self.init()       
+        return None                 
+
+    def root(self, user):
+        self.conn.cursor().execute("SELECT create_root(%s, %s, %s, %s);", \
+             (user['emp'], user['data'], user['newpassword'], user['secret']))
+        self.conn.commit()
+
+    def new(self, user):
+        return ["todo new"]             
     
     def remove(self, user):
-        print("TODO: remove")   
+        return ["todo remove"]
 
 
 def parse_json(string):
@@ -63,8 +68,12 @@ def handle_api_call(db, call):
     """
     
     for func in DbAdapter.FUNC_CALLS:
-        if func in call:     
-            return getattr(db, func)(call[func])
+        if func in call:    
+            #try:
+                data = getattr(db, func)(call[func])
+                return status_ok(data)
+            #except:
+                break
     return status_error()
 
 
@@ -76,7 +85,9 @@ def status_error():
 
 
 def status_ok(data):
-    return json.dumps({"status": "OK TODO DATA"})
+    if data is None:   
+        return json.dumps({"status": "OK"})
+    return json.dumps({"status": "OK", "data": "{}".format(data)})
 
 
 if __name__ == '__main__':
@@ -97,4 +108,5 @@ if __name__ == '__main__':
         print("-----------")
         print(call)
         call = parse_json(call)        
-        handle_api_call(db, call)
+        print(handle_api_call(db, call))
+        print()
