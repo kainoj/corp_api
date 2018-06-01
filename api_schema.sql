@@ -51,7 +51,7 @@ AS $X$
         is_authorised boolean;
     BEGIN
         SELECT auth_emp(admin_id, pswd) INTO is_authorised;
-        -- If employee 'id' exists and admin is authorized
+        -- If employee 'emp_id' exists and admin is authorized
         IF (emp_id IN (SELECT e.id FROM employee e)) AND (is_authorised) THEN
             RETURN (SELECT p.rootpath FROM pathfromroot p WHERE p.id = emp_id);
         END IF;
@@ -60,6 +60,21 @@ AS $X$
 $X$
 LANGUAGE PLpgSQL;
 
+
+CREATE OR REPLACE FUNCTION parent(emp_id int, admin_id int, admin_pswd text) RETURNS int
+AS $X$
+    DECLARE
+        is_authorised boolean;
+    BEGIN
+        SELECT auth_emp(admin_id, admin_pswd) INTO is_authorised;
+        -- If employee emp_id exists and admin is authorised
+        IF (emp_id IN (SELECT e.id FROM employee e)) AND (is_authorised) THEN
+            RETURN (SELECT e.parent FROM employee e WHERE e.id = emp_id);
+        END IF;
+        RAISE EXCEPTION 'Employee does not exist or admin is not authorised';
+    END;
+$X$
+LANGUAGE PLpgSQL;
 
 -- CREATE OR REPLACE FUNCTION new_emp(employee.id%TYPE, employee.dat%TYPE, employee.pswd%TYPE) RETURNS VOID
 -- AS $X$
