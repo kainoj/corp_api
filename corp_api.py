@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 
 class DbAdapter:
 
-    FUNC_CALLS = ['open', 'root', 'new', 'remove']
+    FUNC_CALLS = ['open', 'root', 'ancestors', 'new', 'remove']
 
     def __init__(self, init_db=False):
         self.conn = None
@@ -37,8 +37,12 @@ class DbAdapter:
         return None                 
 
     def root(self, user):
+        root_id = user['emp']
+        data = user['data']
+        pswd = user['newpassword']
+        secret = user['secret']
         self.conn.cursor().execute("SELECT create_root(%s, %s, %s, %s);", \
-             (user['emp'], user['data'], user['newpassword'], user['secret']))
+             (root_id, data, pswd, secret))
         self.conn.commit()
 
     def new(self, user):
@@ -46,6 +50,19 @@ class DbAdapter:
     
     def remove(self, user):
         return ["todo remove"]
+    
+    def ancestors(self, u):
+        """
+        ancestors <admin> <passwd> <emp>
+        """
+        cur = self.conn.cursor()
+        cur.execute("SELECT ancestors(%s, %s, %s);", \
+                    (u['emp'], u['admin'], u['passwd']))
+        res = cur.fetchone()
+        print(res)
+        self.conn.commit()
+        cur.close()
+
 
 
 def parse_json(string):

@@ -18,11 +18,11 @@ CREATE TABLE IF NOT EXISTS pathfromroot(id INT REFERENCES employee (id) NOT NULL
 
 
 -- Returns True iif employee with given id exists and pswds match.
-CREATE OR REPLACE FUNCTION auth_emp(id int, pswd text) RETURNS boolean
+CREATE OR REPLACE FUNCTION auth_emp(admin_id int, admin_pswd text) RETURNS boolean
 AS $X$
     BEGIN
         IF EXISTS (
-            SELECT employee FROM employee e WHERE e.id = id and e.pswd = pswd
+            SELECT e.* FROM employee e WHERE e.id = admin_id and e.pswd = admin_pswd
         ) THEN RETURN True;
         END IF;
         RETURN False;
@@ -39,6 +39,23 @@ AS $X$
             RAISE EXCEPTION 'Cannot create root: wrong secret given';
         END IF;
         INSERT INTO employee VALUES(id, dat, new_pswd, NULL);
+        INSERT INTO pathfromroot VALUES(id, array[]::integer[]);
+    END;
+$X$
+LANGUAGE PLpgSQL;
+
+
+CREATE OR REPLACE FUNCTION ancestors(emp_id int, admin_id int, pswd text) RETURNS int[]
+AS $X$
+    DECLARE
+        is_authorised boolean;
+    BEGIN
+        SELECT auth_emp(admin_id, pswd) INTO is_authorised;
+        -- If employee 'id' exists and admin is authorized
+        IF (emp_id IN (SELECT e.id FROM employee e)) AND (is_authorised) THEN
+            RETURN (SELECT p.rootpath FROM pathfromroot p WHERE p.id = emp_id);
+        END IF;
+        RAISE EXCEPTION 'Employee does not exist or admin is not authorised';
     END;
 $X$
 LANGUAGE PLpgSQL;
