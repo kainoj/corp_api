@@ -16,16 +16,15 @@ class DbAdapter:
     def init(self, schema='api_schema.sql'):
         """
         Initialize the database based uppon a given sql file. 
-        Creates user `app` and all required tables, triggers, etc
+        Creates user `app` and all required tables, functions, etc
         """
         self.conn.cursor().execute(open(schema, "r").read())        
         self.conn.commit()
 
     def open(self, data):
         """
-        Open and connect to datebase.
-        Sample input: 
-        { "baza": "student", "login": "init", "password": "qwerty"}
+        Open and connect to datebase. Sample input: 
+        { "database": "student", "login": "init", "password": "qwerty"}
         """
         host = 'localhost' if 'host' not in data else data['host']
         self.conn = psycopg2.connect(database=data['database'], 
@@ -36,13 +35,14 @@ class DbAdapter:
             self.init()       
         return None                 
 
-    def root(self, user):
-        root_id = user['emp']
-        data = user['data']
-        pswd = user['newpassword']
-        secret = user['secret']
+    def root(self, d):
+        """
+        root <secret> <newpassword> <data> <emp> 
+        """
+        secret = d['secret']
+        pswd, data, root_id =  d['newpassword'], d['data'], d['emp']
         self.conn.cursor().execute("SELECT create_root(%s, %s, %s, %s);", \
-             (root_id, data, pswd, secret))
+                                   (root_id, data, pswd, secret))
         self.conn.commit()
 
     def new(self, user):
@@ -55,9 +55,13 @@ class DbAdapter:
         """
         ancestors <admin> <passwd> <emp>
         """
+        emp, admin, passwd = u['emp'], u['admin'], u['passwd'] 
+
+        if not self.is_authorised(admin, passwd):
+            return None
+
         cur = self.conn.cursor()
-        cur.execute("SELECT ancestors(%s, %s, %s);", \
-                    (u['emp'], u['admin'], u['passwd']))
+        cur.execute("SELECT ancestors(%s);", (emp, ))
         res = cur.fetchone()
         self.conn.commit()
         cur.close()
@@ -67,15 +71,29 @@ class DbAdapter:
         """
         parent <admin> <passwd> <emp>
         """
+        admin, passwd, emp = d['admin'], d['passwd'], d['emp']
+
+        if not self.is_authorised(admin, passwd):
+            return None
+
         cur = self.conn.cursor()
-        cur.execute("SELECT parent(%s, %s, %s);", (d['emp'], d['admin'], d['passwd']))
+        cur.execute("SELECT parent(%s);", (emp, ))
         res = cur.fetchone()
         self.conn.commit()
         cur.close()
         if res[0] is None:
             return "NULL"
         return res[0]
-        
+
+    def is_authorised(self, admin, pswd):
+        """
+        Check wheather admin's credentials are valid.
+        """
+        cur = self.conn.cursor()
+        cur.execute("SELECT auth_emp(%s, %s);", (admin, pswd))
+        res = cur.fetchone()[0]
+        cur.close()
+        return res;
 
 
 def parse_json(string):

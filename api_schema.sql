@@ -6,7 +6,7 @@ CREATE USER app WITH password 'qwerty';
 -- CREATE SEQUENCE seq_emp_id;
 
 -- Create tables
-CREATE TABLE IF NOT EXISTS employee(id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS employee(id int PRIMARY KEY,
                                     dat TEXT,
                                     pswd TEXT NOT NULL,
                                     parent INT REFERENCES employee(id));
@@ -30,6 +30,24 @@ AS $X$
 $X$
 LANGUAGE PLpgSQL;                                
 
+-- TODO ------------------------------------------------------------------------------------DEBUG!!!
+-- Check if 'sup' is superior of employee 'emp'
+-- i.e. path from `root` to `emp` contains node `sup`
+CREATE OR REPLACE FUNCTION is_superior(sup int, emp int) RETURNS boolean
+AS $X$
+    DECLARE
+        emp_path int;
+    BEGIN
+        FOR emp_path IN (SELECT p.rootpath FROM pathfromroot p WHERE p.id = emp) LOOP
+            IF emp_path = sup THEN
+                RETURN True;
+            END IF;
+        END LOOP;
+        RETURN False;
+    END;
+$X$
+LANGUAGE PLpgSQL;
+
 
 -- Create root of the tree. Should be called only once.
 CREATE OR REPLACE FUNCTION create_root(id int, dat text, new_pswd text, root_secret text) RETURNS VOID
@@ -45,41 +63,27 @@ $X$
 LANGUAGE PLpgSQL;
 
 
-CREATE OR REPLACE FUNCTION ancestors(emp_id int, admin_id int, pswd text) RETURNS int[]
+CREATE OR REPLACE FUNCTION ancestors(emp_id int) RETURNS int[]
 AS $X$
-    DECLARE
-        is_authorised boolean;
     BEGIN
-        SELECT auth_emp(admin_id, pswd) INTO is_authorised;
-        -- If employee 'emp_id' exists and admin is authorized
-        IF (emp_id IN (SELECT e.id FROM employee e)) AND (is_authorised) THEN
-            RETURN (SELECT p.rootpath FROM pathfromroot p WHERE p.id = emp_id);
-        END IF;
-        RAISE EXCEPTION 'Employee does not exist or admin is not authorised';
+        RETURN (SELECT p.rootpath FROM pathfromroot p WHERE p.id = emp_id);
     END;
 $X$
 LANGUAGE PLpgSQL;
 
 
-CREATE OR REPLACE FUNCTION parent(emp_id int, admin_id int, admin_pswd text) RETURNS int
+CREATE OR REPLACE FUNCTION parent(emp_id int) RETURNS int
 AS $X$
-    DECLARE
-        is_authorised boolean;
     BEGIN
-        SELECT auth_emp(admin_id, admin_pswd) INTO is_authorised;
-        -- If employee emp_id exists and admin is authorised
-        IF (emp_id IN (SELECT e.id FROM employee e)) AND (is_authorised) THEN
-            RETURN (SELECT e.parent FROM employee e WHERE e.id = emp_id);
-        END IF;
-        RAISE EXCEPTION 'Employee does not exist or admin is not authorised';
+        RETURN (SELECT e.parent FROM employee e WHERE e.id = emp_id);
     END;
 $X$
 LANGUAGE PLpgSQL;
 
--- CREATE OR REPLACE FUNCTION new_emp(employee.id%TYPE, employee.dat%TYPE, employee.pswd%TYPE) RETURNS VOID
--- AS $X$
---     INSERT INTO employee VALUES($1, $2, $3);
---     -- to do 
--- $X$
--- LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION new_emp(emp int, dat text, pswd text, parent int) RETURNS VOID
+AS $X$
+    INSERT INTO employee VALUES(emp, dat, pswd, parent);
+    -- todo: update path
+$X$
+LANGUAGE SQL;
 
