@@ -32,18 +32,16 @@ LANGUAGE PLpgSQL;
 
 -- TODO ------------------------------------------------------------------------------------DEBUG!!!
 -- Check if 'sup' is superior of employee 'emp'
--- i.e. path from `root` to `emp` contains node `sup`
+-- i.e. path from `root` to `emp` contains path from `root` to `sup`
 CREATE OR REPLACE FUNCTION is_superior(sup int, emp int) RETURNS boolean
 AS $X$
     DECLARE
-        emp_path int;
+        emp_path int[];
+        sup_path int[];
     BEGIN
-        FOR emp_path IN (SELECT p.rootpath FROM pathfromroot p WHERE p.id = emp) LOOP
-            IF emp_path = sup THEN
-                RETURN True;
-            END IF;
-        END LOOP;
-        RETURN False;
+        SELECT p.rootpath INTO emp_path FROM pathfromroot p WHERE p.id = emp;
+        SELECT p.rootpath INTO sup_path FROM pathfromroot p WHERE p.id = sup;
+        RETURN emp_path @> sup_path;
     END;
 $X$
 LANGUAGE PLpgSQL;
@@ -82,8 +80,15 @@ LANGUAGE PLpgSQL;
 
 CREATE OR REPLACE FUNCTION new_emp(emp int, dat text, pswd text, parent int) RETURNS VOID
 AS $X$
-    INSERT INTO employee VALUES(emp, dat, pswd, parent);
-    -- todo: update path
+    DECLARE
+        parent_path int[];
+        emp_path int[];
+    BEGIN
+        SELECT p.rootpath INTO parent_path FROM pathfromroot p WHERE p.id = parent;
+        emp_path = parent_path || parent;
+        INSERT INTO employee VALUES(emp, dat, pswd, parent);
+        INSERT INTO pathfromroot VALUES(emp, emp_path);
+    END;
 $X$
-LANGUAGE SQL;
+LANGUAGE PLpgSQL;
 

@@ -45,8 +45,22 @@ class DbAdapter:
                                    (root_id, data, pswd, secret))
         self.conn.commit()
 
-    def new(self, user):
-        return ["todo new"]             
+    def new(self, d):
+        """
+        new <admin> <passwd> <data> <newpasswd> <emp1> <emp>
+        """
+        admin, passwd, data, newpasswd, emp1, emp = \
+         d['admin'], d['passwd'], d['data'], d['newpasswd'], d['emp1'], d['emp']
+
+        if not self.is_authorised(admin, passwd) \
+           or not self.is_superior_or_emp(admin, emp1):
+            return None
+
+        cur = self.conn.cursor()
+        cur.execute("SELECT new_emp(%s, %s, %s, %s);", (emp, data, passwd, emp1))
+        self.conn.commit()
+        cur.close()
+        return None           
     
     def remove(self, user):
         return ["todo remove"]
@@ -93,7 +107,20 @@ class DbAdapter:
         cur.execute("SELECT auth_emp(%s, %s);", (admin, pswd))
         res = cur.fetchone()[0]
         cur.close()
-        return res;
+        return res
+
+    def is_superior(self, sup, emp):
+        """
+        Check wheater `sup` is `emp`'s superior
+        """
+        cur = self.conn.cursor()
+        cur.execute("SELECT is_superior(%s, %s);", (sup, emp))
+        res = cur.fetchone()[0]
+        cur.close()
+        return res
+
+    def is_superior_or_emp(self, sup, emp):
+        return self.is_superior(sup, emp) or sup == emp
 
 
 def parse_json(string):
