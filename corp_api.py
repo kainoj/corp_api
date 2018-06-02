@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 
 class DbAdapter:
 
-    FUNC_CALLS = ['open', 'root', 'ancestors', 'parent', 'child', 'new', 'remove']
+    FUNC_CALLS = ['open', 'root', 'ancestors', 'parent', 'child', 'new', 'read', 'update', 'remove']
 
     def __init__(self, init_db=False):
         self.conn = None
@@ -96,8 +96,8 @@ class DbAdapter:
         return res[0]
 
     def child(self, d):
-        admin, passwd, emp = d['admin'], d['passwd'], d['emp']
-        
+        admin, passwd, emp = d['admin'], d['passwd'], d['emp']   
+     
         self.authorise(admin=admin, pswd=passwd)
         cur = self.conn.cursor()
         cur.execute("SELECT child(%s);", (emp, ))
@@ -105,6 +105,26 @@ class DbAdapter:
         self.conn.commit()
         cur.close()
         return [r[0] for r in res]
+
+    def read(self, d):
+        admin, passwd, emp = d['admin'], d['passwd'], d['emp']
+        self.authorise(level=2, admin=admin, pswd=passwd, sup=admin, emp=emp)
+        cur = self.conn.cursor()
+        cur.execute("SELECT read_data(%s);", (emp, ))
+        res = cur.fetchone()[0]
+        self.conn.commit()
+        cur.close()
+        return res
+
+    def update(self, d):
+        admin, pswd, emp, dat = d['admin'], d['passwd'], d['emp'], d['newdata']
+        self.authorise(level=2, admin=admin, pswd=pswd, sup=admin, emp=emp)
+
+        cur = self.conn.cursor()
+        cur.execute("SELECT update_emp(%s, %s);", (emp, dat))
+        self.conn.commit()
+        cur.close()
+
 
     def authorise(self, level=0, admin=None, pswd=None, sup=None, emp=None):
         """

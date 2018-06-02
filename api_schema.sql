@@ -98,3 +98,17 @@ AS $X$
     SELECT e.id FROM employee e WHERE e.parent = emp;
 $X$
 LANGUAGE SQL;
+
+
+CREATE OR REPLACE FUNCTION read_data(emp int) RETURNS text
+AS $X$
+    SELECT e.dat FROM employee e WHERE e.id = emp;
+$X$
+LANGUAGE SQL;
+
+
+CREATE OR REPLACE FUNCTION update_emp(emp int, emp_data text) RETURNS VOID
+AS $X$
+    UPDATE employee e SET dat = emp_data WHERE e.id = emp;
+$X$
+LANGUAGE SQL;
