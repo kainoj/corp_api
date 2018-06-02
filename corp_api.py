@@ -52,9 +52,7 @@ class DbAdapter:
         admin, passwd, data, newpasswd, emp1, emp = \
          d['admin'], d['passwd'], d['data'], d['newpasswd'], d['emp1'], d['emp']
 
-        if not self.is_authorised(admin, passwd) \
-           or not self.is_superior_or_emp(admin, emp1):
-            return None
+        self.authorise(level=2, admin=admin, pswd=passwd, sup=admin, emp=emp1)
 
         cur = self.conn.cursor()
         cur.execute("SELECT new_emp(%s, %s, %s, %s);", (emp, data, passwd, emp1))
@@ -71,8 +69,7 @@ class DbAdapter:
         """
         emp, admin, passwd = u['emp'], u['admin'], u['passwd'] 
 
-        if not self.is_authorised(admin, passwd):
-            return None
+        self.authorise(admin=admin, pswd=passwd)
 
         cur = self.conn.cursor()
         cur.execute("SELECT ancestors(%s);", (emp, ))
@@ -87,8 +84,7 @@ class DbAdapter:
         """
         admin, passwd, emp = d['admin'], d['passwd'], d['emp']
 
-        if not self.is_authorised(admin, passwd):
-            return None
+        self.authorise(admin=admin, pswd=passwd)
 
         cur = self.conn.cursor()
         cur.execute("SELECT parent(%s);", (emp, ))
@@ -98,6 +94,24 @@ class DbAdapter:
         if res[0] is None:
             return "NULL"
         return res[0]
+
+    def authorise(self, level=0, admin=None, pswd=None, sup=None, emp=None):
+        """
+        Level 0 - check wheater admin's credentaials are valid.
+        Level 1 - Level 0 and check if `sup` is `emp`'s superior.
+        Level 2 - Level 1 OR check if `sup` is `emp` itself.
+        
+        Throws an exception if authorization fails.
+        """
+        if not self.is_authorised(admin, pswd):
+            raise Exception("Invalid credentials")
+        
+        if level == 1 and not self.is_superior(sup, emp):
+            raise Exception("No privileges")
+        
+        if level == 2 and not self.is_superior_or_emp(sup, emp):
+            raise Exception("No privileges")
+
 
     def is_authorised(self, admin, pswd):
         """
@@ -121,6 +135,9 @@ class DbAdapter:
 
     def is_superior_or_emp(self, sup, emp):
         return self.is_superior(sup, emp) or sup == emp
+    
+    def unauthorized(self):
+        raise Exception("Unauthorised.")
 
 
 def parse_json(string):
