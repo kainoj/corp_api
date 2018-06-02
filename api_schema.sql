@@ -92,3 +92,9 @@ AS $X$
 $X$
 LANGUAGE PLpgSQL;
 
+
+CREATE OR REPLACE FUNCTION child(emp int) RETURNS SETOF int
+AS $X$
+    SELECT e.id FROM employee e WHERE e.parent = emp;
+$X$
+LANGUAGE SQL;

@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 
 class DbAdapter:
 
-    FUNC_CALLS = ['open', 'root', 'ancestors', 'parent', 'new', 'remove']
+    FUNC_CALLS = ['open', 'root', 'ancestors', 'parent', 'child', 'new', 'remove']
 
     def __init__(self, init_db=False):
         self.conn = None
@@ -94,6 +94,17 @@ class DbAdapter:
         if res[0] is None:
             return "NULL"
         return res[0]
+
+    def child(self, d):
+        admin, passwd, emp = d['admin'], d['passwd'], d['emp']
+        
+        self.authorise(admin=admin, pswd=passwd)
+        cur = self.conn.cursor()
+        cur.execute("SELECT child(%s);", (emp, ))
+        res = cur.fetchall()
+        self.conn.commit()
+        cur.close()
+        return [r[0] for r in res]
 
     def authorise(self, level=0, admin=None, pswd=None, sup=None, emp=None):
         """
