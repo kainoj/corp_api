@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 
 class DbAdapter:
 
-    FUNC_CALLS = ['open', 'root', 'ancestors', 'parent', 'child', 'new', 'read', 'update', 'remove']
+    FUNC_CALLS = ['open', 'root', 'ancestors', 'ancestor', 'parent', 'child', 'new', 'read', 'update', 'remove']
 
     def __init__(self, init_db=False):
         self.conn = None
@@ -60,8 +60,15 @@ class DbAdapter:
         cur.close()
         return None           
     
-    def remove(self, user):
-        return ["todo remove"]
+    def remove(self, d):
+        admin, passwd, emp = d['admin'], d['passwd'], d['emp']
+        self.authorise(level=1, admin=admin, pswd=passwd, sup=admin, emp=emp)
+        
+        cur = self.conn.cursor()
+        cur.execute("SELECT remove_emp(%s);", (emp, ))
+        self.conn.commit()
+        cur.close()
+        return None
     
     def ancestors(self, u):
         """
@@ -77,6 +84,11 @@ class DbAdapter:
         self.conn.commit()
         cur.close()
         return res[0]
+    
+    def ancestor(self, d):
+        admin, passwd, emp1, emp = d['admin'], d['passwd'], d['emp1'], d['emp']
+        self.authorise(admin=admin, pswd=passwd)
+        return self.is_superior(emp, emp1)
 
     def parent(self, d):
         """
@@ -159,7 +171,7 @@ class DbAdapter:
         Check wheater `sup` is `emp`'s superior
         """
         cur = self.conn.cursor()
-        cur.execute("SELECT is_superior(%s, %s);", (sup, emp))
+        cur.execute("SELECT ancestor(%s, %s);", (sup, emp))
         res = cur.fetchone()[0]
         cur.close()
         return res
@@ -228,8 +240,6 @@ if __name__ == '__main__':
     db = DbAdapter(args.init)
 
     for call in [line.rstrip('\n') for line in open(args.file)]:
-        print("-----------")
-        print(call)
+        # print("-----------\n" + call )
         call = parse_json(call)        
         print(handle_api_call(db, call))
-        print()

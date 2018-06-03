@@ -8,6 +8,6 @@ DROP FUNCTION IF EXISTS parent(int);
 DROP FUNCTION IF EXISTS child(int);
 -- DROP FUNCTION IF EXISTS new_emp(employee.id%TYPE, employee.dat%TYPE, employee.pswd%TYPE, text);
 
-DROP USER IF EXISTS app;
 DROP TABLE IF EXISTS pathfromroot;
 DROP TABLE IF EXISTS employee CASCADE;
+DROP USER IF EXISTS app;

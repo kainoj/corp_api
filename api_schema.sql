@@ -1,20 +1,17 @@
--- Create API user if not exists
-DROP USER IF EXISTS app;
-CREATE USER app WITH password 'qwerty';
-
--- TODO
--- CREATE SEQUENCE seq_emp_id;
-
 -- Create tables
 CREATE TABLE IF NOT EXISTS employee(id int PRIMARY KEY,
                                     dat TEXT,
                                     pswd TEXT NOT NULL,
-                                    parent INT REFERENCES employee(id));
+                                    parent INT REFERENCES employee(id) ON DELETE CASCADE);
 
-CREATE TABLE IF NOT EXISTS pathfromroot(id INT REFERENCES employee (id) NOT NULL,
+CREATE TABLE IF NOT EXISTS pathfromroot(id INT REFERENCES employee (id) ON DELETE CASCADE NOT NULL,
                                         rootpath INT[]);
 
 
+-- Create API user if not exists and grant priviliges
+DROP USER IF EXISTS app;
+CREATE USER app WITH password 'qwerty';
+GRANT ALL PRIVILEGES ON employee, pathfromroot TO app;                                     
 
 
 -- Returns True iif employee with given id exists and pswds match.
@@ -30,10 +27,10 @@ AS $X$
 $X$
 LANGUAGE PLpgSQL;                                
 
--- TODO ------------------------------------------------------------------------------------DEBUG!!!
--- Check if 'sup' is superior of employee 'emp'
+
+-- Check if 'sup' is ancestor (superior) of employee 'emp'
 -- i.e. path from `root` to `emp` contains path from `root` to `sup`
-CREATE OR REPLACE FUNCTION is_superior(sup int, emp int) RETURNS boolean
+CREATE OR REPLACE FUNCTION ancestor(sup int, emp int) RETURNS boolean
 AS $X$
     DECLARE
         emp_path int[];
@@ -78,6 +75,7 @@ AS $X$
 $X$
 LANGUAGE PLpgSQL;
 
+
 CREATE OR REPLACE FUNCTION new_emp(emp int, dat text, pswd text, parent int) RETURNS VOID
 AS $X$
     DECLARE
@@ -110,5 +108,12 @@ LANGUAGE SQL;
 CREATE OR REPLACE FUNCTION update_emp(emp int, emp_data text) RETURNS VOID
 AS $X$
     UPDATE employee e SET dat = emp_data WHERE e.id = emp;
+$X$
+LANGUAGE SQL;
+
+CREATE OR REPLACE FUNCTION remove_emp(emp int) RETURNS VOID
+AS $X$
+    DELETE FROM pathfromroot WHERE pathfromroot.id = emp;
+    DELETE FROM employee WHERE employee.id = emp;
 $X$
 LANGUAGE SQL;
