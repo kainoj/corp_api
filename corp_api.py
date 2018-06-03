@@ -36,9 +36,6 @@ class DbAdapter:
         return None                 
 
     def root(self, d):
-        """
-        root <secret> <newpassword> <data> <emp> 
-        """
         secret = d['secret']
         pswd, data, root_id =  d['newpassword'], d['data'], d['emp']
         self.conn.cursor().execute("SELECT create_root(%s, %s, %s, %s);", \
@@ -46,9 +43,6 @@ class DbAdapter:
         self.conn.commit()
 
     def new(self, d):
-        """
-        new <admin> <passwd> <data> <newpasswd> <emp1> <emp>
-        """
         admin, passwd, data, newpasswd, emp1, emp = \
          d['admin'], d['passwd'], d['data'], d['newpasswd'], d['emp1'], d['emp']
 
@@ -71,9 +65,6 @@ class DbAdapter:
         return None
     
     def ancestors(self, u):
-        """
-        ancestors <admin> <passwd> <emp>
-        """
         emp, admin, passwd = u['emp'], u['admin'], u['passwd'] 
 
         self.authorise(admin=admin, pswd=passwd)
@@ -90,9 +81,6 @@ class DbAdapter:
         return self.is_superior(emp, emp1)
 
     def parent(self, d):
-        """
-        parent <admin> <passwd> <emp>
-        """
         admin, passwd, emp = d['admin'], d['passwd'], d['emp']
 
         self.authorise(admin=admin, pswd=passwd)
@@ -205,7 +193,6 @@ def handle_api_call(db, call):
     If the call is invalid (ie non-existing function or None) then returns
     a JSON with ERROR status code.
     """
-    
     for func in DbAdapter.FUNC_CALLS:
         if func in call:    
             #try:
@@ -244,6 +231,5 @@ if __name__ == '__main__':
     db = DbAdapter(args.init)
 
     for call in [line.rstrip('\n') for line in open(args.file)]:
-        # print("-----------\n" + call )
         call = parse_json(call)        
         print(handle_api_call(db, call))

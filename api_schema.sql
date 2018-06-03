@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS employee(id int PRIMARY KEY,
                                     pswd TEXT NOT NULL,
                                     parent INT REFERENCES employee(id) ON DELETE CASCADE);
 
-CREATE TABLE IF NOT EXISTS pathfromroot(id INT REFERENCES employee (id) ON DELETE CASCADE NOT NULL,
+CREATE TABLE IF NOT EXISTS pathfromroot(id INT REFERENCES employee(id) ON DELETE CASCADE NOT NULL,
                                         rootpath INT[]);
 
 
