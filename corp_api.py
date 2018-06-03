@@ -81,7 +81,6 @@ class DbAdapter:
         cur = self.conn.cursor()
         cur.execute("SELECT ancestors(%s);", (emp, ))
         res = cur.fetchone()
-        self.conn.commit()
         cur.close()
         return res[0]
     
@@ -101,7 +100,6 @@ class DbAdapter:
         cur = self.conn.cursor()
         cur.execute("SELECT parent(%s);", (emp, ))
         res = cur.fetchone()
-        self.conn.commit()
         cur.close()
         if res[0] is None:
             return "NULL"
@@ -114,7 +112,6 @@ class DbAdapter:
         cur = self.conn.cursor()
         cur.execute("SELECT child(%s);", (emp, ))
         res = cur.fetchall()
-        self.conn.commit()
         cur.close()
         return [r[0] for r in res]
 
@@ -124,7 +121,6 @@ class DbAdapter:
         cur = self.conn.cursor()
         cur.execute("SELECT read_data(%s);", (emp, ))
         res = cur.fetchone()[0]
-        self.conn.commit()
         cur.close()
         return res
 
@@ -143,7 +139,6 @@ class DbAdapter:
 
         cur = self.conn.cursor()
         cur.execute("SELECT descendants(%s);", (emp, ))
-        self.conn.commit()
         res = cur.fetchall()
         cur.close()
         return [r[0] for r in res]
@@ -164,7 +159,6 @@ class DbAdapter:
         
         if level == 2 and not self.is_superior_or_emp(sup, emp):
             raise Exception("No privileges")
-
 
     def is_authorised(self, admin, pswd):
         """
@@ -250,6 +244,6 @@ if __name__ == '__main__':
     db = DbAdapter(args.init)
 
     for call in [line.rstrip('\n') for line in open(args.file)]:
-        print("-----------\n" + call )
+        # print("-----------\n" + call )
         call = parse_json(call)        
         print(handle_api_call(db, call))

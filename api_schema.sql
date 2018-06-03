@@ -27,7 +27,7 @@ AS $X$
         RETURN False;
     END;
 $X$
-LANGUAGE PLpgSQL;                                
+LANGUAGE PLpgSQL STABLE;                                
 
 
 -- Check if 'sup' is ancestor (superior) of employee 'emp'
@@ -43,21 +43,21 @@ AS $X$
         RETURN emp_path @> sup_path;
     END;
 $X$
-LANGUAGE PLpgSQL;
+LANGUAGE PLpgSQL STABLE;
 
 
 -- Create root of the tree. Should be called only once.
 CREATE OR REPLACE FUNCTION create_root(id int, dat text, new_pswd text, root_secret text) RETURNS VOID
 AS $X$
     BEGIN
-        IF (root_secret != 'qwerty') THEN
+        IF (crypt(root_secret, 'this one is secret') != 'thzvQYNpeKHKI') THEN
             RAISE EXCEPTION 'Cannot create root: wrong secret given';
         END IF;
         INSERT INTO employee VALUES(id, dat, crypt(new_pswd, gen_salt('bf')), NULL);
         INSERT INTO pathfromroot VALUES(id, array[]::integer[]);
     END;
 $X$
-LANGUAGE PLpgSQL;
+LANGUAGE PLpgSQL VOLATILE;
 
 
 CREATE OR REPLACE FUNCTION ancestors(emp_id int) RETURNS int[]
@@ -66,7 +66,7 @@ AS $X$
         RETURN (SELECT p.rootpath FROM pathfromroot p WHERE p.id = emp_id);
     END;
 $X$
-LANGUAGE PLpgSQL;
+LANGUAGE PLpgSQL STABLE;
 
 
 CREATE OR REPLACE FUNCTION parent(emp_id int) RETURNS int
@@ -75,7 +75,7 @@ AS $X$
         RETURN (SELECT e.parent FROM employee e WHERE e.id = emp_id);
     END;
 $X$
-LANGUAGE PLpgSQL;
+LANGUAGE PLpgSQL STABLE;
 
 
 CREATE OR REPLACE FUNCTION new_emp(emp int, dat text, pswd text, parent int) RETURNS VOID
@@ -90,28 +90,28 @@ AS $X$
         INSERT INTO pathfromroot VALUES(emp, emp_path);
     END;
 $X$
-LANGUAGE PLpgSQL;
+LANGUAGE PLpgSQL VOLATILE;
 
 
 CREATE OR REPLACE FUNCTION child(emp int) RETURNS SETOF int
 AS $X$
     SELECT e.id FROM employee e WHERE e.parent = emp;
 $X$
-LANGUAGE SQL;
+LANGUAGE SQL STABLE;
 
 
 CREATE OR REPLACE FUNCTION read_data(emp int) RETURNS text
 AS $X$
     SELECT e.dat FROM employee e WHERE e.id = emp;
 $X$
-LANGUAGE SQL;
+LANGUAGE SQL STABLE;
 
 
 CREATE OR REPLACE FUNCTION update_emp(emp int, emp_data text) RETURNS VOID
 AS $X$
     UPDATE employee e SET dat = emp_data WHERE e.id = emp;
 $X$
-LANGUAGE SQL;
+LANGUAGE SQL VOLATILE;
 
 
 CREATE OR REPLACE FUNCTION remove_emp(emp int) RETURNS VOID
@@ -119,7 +119,7 @@ AS $X$
     DELETE FROM pathfromroot WHERE pathfromroot.id = emp;
     DELETE FROM employee WHERE employee.id = emp;
 $X$
-LANGUAGE SQL;
+LANGUAGE SQL VOLATILE;
 
 
 CREATE OR REPLACE FUNCTION descendants(emp int) RETURNS SETOF int
@@ -133,4 +133,4 @@ AS $X$
         SELECT * FROM children);
     END;
 $X$
-LANGUAGE PLpgSQL;
+LANGUAGE PLpgSQL STABLE;
