@@ -111,9 +111,24 @@ AS $X$
 $X$
 LANGUAGE SQL;
 
+
 CREATE OR REPLACE FUNCTION remove_emp(emp int) RETURNS VOID
 AS $X$
     DELETE FROM pathfromroot WHERE pathfromroot.id = emp;
     DELETE FROM employee WHERE employee.id = emp;
 $X$
 LANGUAGE SQL;
+
+
+CREATE OR REPLACE FUNCTION descendants(emp int) RETURNS SETOF int
+AS $X$
+    BEGIN
+        RETURN QUERY (WITH RECURSIVE children(id) AS (
+            SELECT e.id FROM employee e WHERE e.parent = emp
+            UNION ALL
+                SELECT e2.id FROM children ch JOIN employee e2 ON (ch.id = e2.parent)
+        )
+        SELECT * FROM children);
+    END;
+$X$
+LANGUAGE PLpgSQL;
