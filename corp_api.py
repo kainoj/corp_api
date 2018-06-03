@@ -250,6 +250,6 @@ if __name__ == '__main__':
     db = DbAdapter(args.init)
 
     for call in [line.rstrip('\n') for line in open(args.file)]:
-        # print("-----------\n" + call )
+        print("-----------\n" + call )
         call = parse_json(call)        
         print(handle_api_call(db, call))

@@ -10,8 +10,10 @@ CREATE TABLE IF NOT EXISTS pathfromroot(id INT REFERENCES employee (id) ON DELET
 
 -- Create API user if not exists and grant priviliges
 DROP USER IF EXISTS app;
-CREATE USER app WITH password 'qwerty';
+CREATE USER app WITH ENCRYPTED PASSWORD 'qwerty';
 GRANT ALL PRIVILEGES ON employee, pathfromroot TO app;                                     
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 
 -- Returns True iif employee with given id exists and pswds match.
@@ -19,7 +21,7 @@ CREATE OR REPLACE FUNCTION auth_emp(admin_id int, admin_pswd text) RETURNS boole
 AS $X$
     BEGIN
         IF EXISTS (
-            SELECT e.* FROM employee e WHERE e.id = admin_id and e.pswd = admin_pswd
+            SELECT e.* FROM employee e WHERE e.id = admin_id and e.pswd = crypt(admin_pswd, e.pswd)
         ) THEN RETURN True;
         END IF;
         RETURN False;
@@ -51,7 +53,7 @@ AS $X$
         IF (root_secret != 'qwerty') THEN
             RAISE EXCEPTION 'Cannot create root: wrong secret given';
         END IF;
-        INSERT INTO employee VALUES(id, dat, new_pswd, NULL);
+        INSERT INTO employee VALUES(id, dat, crypt(new_pswd, gen_salt('bf')), NULL);
         INSERT INTO pathfromroot VALUES(id, array[]::integer[]);
     END;
 $X$
@@ -84,7 +86,7 @@ AS $X$
     BEGIN
         SELECT p.rootpath INTO parent_path FROM pathfromroot p WHERE p.id = parent;
         emp_path = parent_path || parent;
-        INSERT INTO employee VALUES(emp, dat, pswd, parent);
+        INSERT INTO employee VALUES(emp, dat, crypt(pswd, gen_salt('bf')), parent);
         INSERT INTO pathfromroot VALUES(emp, emp_path);
     END;
 $X$
