@@ -43,8 +43,13 @@ class DbAdapter:
         self.conn.commit()
 
     def new(self, d):
-        admin, passwd, data, newpasswd, emp1, emp = \
-         d['admin'], d['passwd'], d['data'], d['newpasswd'], d['emp1'], d['emp']
+        try:
+            admin, passwd, newpasswd, emp1, emp = \
+              d['admin'], d['passwd'], d['newpasswd'], d['emp1'], d['emp']
+        except:
+            raise Exception('new(): not enough data given')
+
+        data = d['data'] if 'data' in d else None
 
         self.authorise(level=2, admin=admin, pswd=passwd, sup=admin, emp=emp1)
 
@@ -68,6 +73,7 @@ class DbAdapter:
         emp, admin, passwd = u['emp'], u['admin'], u['passwd'] 
 
         self.authorise(admin=admin, pswd=passwd)
+        self.assert_emp_exists(emp)
 
         cur = self.conn.cursor()
         cur.execute("SELECT ancestors(%s);", (emp, ))
@@ -84,6 +90,7 @@ class DbAdapter:
         admin, passwd, emp = d['admin'], d['passwd'], d['emp']
 
         self.authorise(admin=admin, pswd=passwd)
+        self.assert_emp_exists(emp)
 
         cur = self.conn.cursor()
         cur.execute("SELECT parent(%s);", (emp, ))
@@ -97,6 +104,8 @@ class DbAdapter:
         admin, passwd, emp = d['admin'], d['passwd'], d['emp']   
      
         self.authorise(admin=admin, pswd=passwd)
+        self.assert_emp_exists(emp)
+
         cur = self.conn.cursor()
         cur.execute("SELECT child(%s);", (emp, ))
         res = cur.fetchall()
@@ -106,6 +115,8 @@ class DbAdapter:
     def read(self, d):
         admin, passwd, emp = d['admin'], d['passwd'], d['emp']
         self.authorise(level=2, admin=admin, pswd=passwd, sup=admin, emp=emp)
+        self.assert_emp_exists(emp)
+        
         cur = self.conn.cursor()
         cur.execute("SELECT read_data(%s);", (emp, ))
         res = cur.fetchone()[0]
@@ -123,7 +134,9 @@ class DbAdapter:
 
     def descendants(self, d):
         admin, passwd, emp = d['admin'], d['passwd'], d['emp']
+        
         self.authorise(admin=admin, pswd=passwd)
+        self.assert_emp_exists(emp)
 
         cur = self.conn.cursor()
         cur.execute("SELECT descendants(%s);", (emp, ))
@@ -140,13 +153,13 @@ class DbAdapter:
         Throws an exception if authorization fails.
         """
         if not self.is_authorised(admin, pswd):
-            raise Exception("Invalid credentials")
-        
+            raise Exception("invalid credentials")
+
         if level == 1 and not self.is_superior(sup, emp):
-            raise Exception("No privileges")
+            raise Exception("no privileges")
         
         if level == 2 and not self.is_superior_or_emp(sup, emp):
-            raise Exception("No privileges")
+            raise Exception("no privileges")
 
     def is_authorised(self, admin, pswd):
         """
@@ -162,6 +175,9 @@ class DbAdapter:
         """
         Check wheater `sup` is `emp`'s superior
         """
+        self.assert_emp_exists(sup)
+        self.assert_emp_exists(emp)
+
         cur = self.conn.cursor()
         cur.execute("SELECT ancestor(%s, %s);", (sup, emp))
         res = cur.fetchone()[0]
@@ -170,9 +186,14 @@ class DbAdapter:
 
     def is_superior_or_emp(self, sup, emp):
         return self.is_superior(sup, emp) or sup == emp
-    
-    def unauthorized(self):
-        raise Exception("Unauthorised.")
+
+    def assert_emp_exists(self, emp):
+        cur = self.conn.cursor()
+        cur.execute("SELECT emp_exists(%s);", (emp, ))
+        exists = cur.fetchone()[0]
+        cur.close()
+        if not exists:
+            raise Exception('employee with id={} does not exist'.format(emp))
 
 
 def parse_json(string):
@@ -187,7 +208,7 @@ def parse_json(string):
     return obj
 
 
-def handle_api_call(db, call):
+def handle_api_call(db, call, debug):
     """
     Handle an api call. Returns a JSON which contains fucntion call result.
     If the call is invalid (ie non-existing function or None) then returns
@@ -195,19 +216,22 @@ def handle_api_call(db, call):
     """
     for func in DbAdapter.FUNC_CALLS:
         if func in call:    
-            #try:
+            try:
                 data = getattr(db, func)(call[func])
                 return status_ok(data)
-            #except:
-                break
-    return status_error()
+            except Exception as e:
+                return status_error(str(e), debug)
+    return status_error('undefined call', debug)
 
 
-def status_error():
+def status_error(msg=None, debug=False):
     """
     Returns a JSON objet representig an ERROR
     """
-    return json.dumps({"status": "ERROR"})
+    status = {"status": "ERROR"}
+    if msg is not None and debug:
+        status['debug'] = msg
+    return json.dumps(status)
 
 
 def status_ok(data):
@@ -226,10 +250,13 @@ if __name__ == '__main__':
     parser.add_argument("-file", metavar="file",
                         help='File from which api call will be read. ' \
                         'TODO: if not specified, use stdio.')
+    parser.add_argument('-debug', action='store_true', 
+                        help='Show detailed information on error status')
     args = parser.parse_args()
 
     db = DbAdapter(args.init)
 
     for call in [line.rstrip('\n') for line in open(args.file)]:
-        call = parse_json(call)        
-        print(handle_api_call(db, call))
+        if call is not None:
+            call = parse_json(call)        
+        print(handle_api_call(db, call, args.debug))

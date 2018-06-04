@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS employee(id int PRIMARY KEY,
                                     parent INT REFERENCES employee(id) ON DELETE CASCADE);
 
 CREATE TABLE IF NOT EXISTS pathfromroot(id INT REFERENCES employee(id) ON DELETE CASCADE NOT NULL,
-                                        rootpath INT[]);
+                                        rootpath INT[] NOT NULL);
 
 
 -- Create API user if not exists and grant priviliges
@@ -131,6 +131,15 @@ AS $X$
                 SELECT e2.id FROM children ch JOIN employee e2 ON (ch.id = e2.parent)
         )
         SELECT * FROM children);
+    END;
+$X$
+LANGUAGE PLpgSQL STABLE;
+
+
+CREATE OR REPLACE FUNCTION emp_exists(emp int) RETURNS boolean
+AS $X$
+    BEGIN
+        RETURN EXISTS (SELECT * FROM employee e where e.id = emp);
     END;
 $X$
 LANGUAGE PLpgSQL STABLE;
