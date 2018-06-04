@@ -249,14 +249,16 @@ if __name__ == '__main__':
                         'Note: db user must already exist.')
     parser.add_argument("-file", metavar="file",
                         help='File from which api call will be read. ' \
-                        'TODO: if not specified, use stdio.')
+                        'If not specified, use stdio.')
     parser.add_argument('-debug', action='store_true', 
                         help='Show detailed information on error status')
     args = parser.parse_args()
 
+    source = open(args.file) if args.file else sys.stdin 
+    
     db = DbAdapter(args.init)
 
-    for call in [line.rstrip('\n') for line in open(args.file)]:
+    for call in [line.rstrip('\n') for line in source]:
         if call is not None:
             call = parse_json(call)        
         print(handle_api_call(db, call, args.debug))

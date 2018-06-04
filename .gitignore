@@ -3,3 +3,4 @@ test/
 notes.md
 *.xml
 .gitignore
+*.pdf
