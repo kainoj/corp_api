@@ -4,10 +4,10 @@ _Przemysław Joniak, grupa 1_
 
 Uruchomienie: `python corp_api.py [-h] [-init] [-file file] [-debug]`. 
 
-API zostało napisane w Pythonie3. Przed pierwszym uruchomienim wymagane jest, aby istniał użytkownik `init` z uprawnieniami `CREATEDB` i `CREATEUSER`, oraz baza danych do której `init` ma dostęp.
+API zostało napisane w Pythonie3. Przed pierwszym uruchomieniem wymagane jest, aby istniał użytkownik `init` z uprawnieniami `CREATEDB` i `CREATEUSER`, oraz baza danych do której `init` ma dostęp.
 
 
-## Przykładowe uruchimienia:
+## Przykładowe uruchomienia:
 ```bash
 # Inicjalizacja bazy danych, dane pobierane są z pliku
 python3 corp_api.py -init -file test/init.json
@@ -33,18 +33,18 @@ make clean
 
 ![Diagram ER](misc/diagram.png)
 
-Ładowany przy pierwszym uruchimieniu aplikacji model fizyczny znajduje się w pliku `api_schema.sql`. Zdefiniowane są tam kolejno:
+Ładowany przy pierwszym uruchomieniu aplikacji model fizyczny znajduje się w pliku `api_schema.sql`. Zdefiniowane są tam kolejno:
 - tabele `employee` oraz `pathfromroot`
 
-    - `employee` zawiera podstawowe informaje o pracowniku: jego `id`, hasz hasła `pswd`, dane `dat` oraz wskaźnik `parent` na swojego przełożonego.  `parent` szefa (korzenia) jako jedyny jest pusty. Ze wzglądów bezpieczeństwa atrybut `pswd` nie może być pusty.
+    - `employee` zawiera podstawowe informacje o pracowniku: jego `id`, hasz hasła `pswd`, dane `dat` oraz wskaźnik `parent` na swojego przełożonego.  `parent` szefa (korzenia) jako jedyny jest pusty. Ze względów bezpieczeństwa atrybut `pswd` nie może być pusty.
     - `pathfromroot` dla każdego pracownika trzyma ścieżkę od korzenia do tego pracownika wyłącznie. Ta ścieżka jest typu `array::int` (w szczególności ścieżka dla korzenia to: `[]` )
 - użytkownik `app` wraz z odpowiednimi uprawnieniami
 - rozszerzenie `pgcrypto` do obliczania haszy haseł
-- wyszczególnine w specyfikacji funkcje API ze, które wywoływane są z poziomu pythona. Dodtkowo zaimplementowane zostały funkcje:
-    - `auth_emp(admin, pswd)` - zwraca `true` wtedy i tylko wtedy, gdy podane dane logowania pracownika są poprawne
+- wyszczególnione w specyfikacji funkcje API ze, które wywoływane są z poziomu pythona. Dodtkowo zaimplementowane zostały funkcje:
+    - `auth_emp(admin, pswd)` - zwraca `true` wtedy i tylko wtedy, gdy podane dane logowania pracownika są poprawne, tj. `admin` istnieje w tabeli `employee` oraz hasz jego hasła zgadza się z haszem `pswd`
     - `emp_exists(emp)` - zwraca `true` wtedy i tylko wtedy, gdy pracownik `emp` istnieje w bazie danych
 
-    Szczegółowy opis wszystkich funkcji zajduje sie w części `Implementacja`
+    Szczegółowy opis wszystkich funkcji znajduje się w części `Implementacja`
 
 ## Implementacja
 
@@ -68,8 +68,8 @@ Każda z funkcji może zwrócić albo żądaną wartość, albo wartość pustą
 
 - `open(data)`
     
-    Nazwiązuje połączenie z bazą danych. Rzucany jest wyjątek o ile połączenie się nie powiedzie. `data` jest słownikiem z kluczami: `database`, `login`, `haslo` oraz opcjonalnym `host`.
-    Wywowołuje funkcję `init()` inicjującą bazę, o ile zostało to wyszczególnione w konstruktorze klasy.
+    Nawiązuje połączenie z bazą danych. Rzucany jest wyjątek o ile połączenie się nie powiedzie. `data` jest słownikiem z kluczami: `database`, `login`, `haslo` oraz opcjonalnym `host`.
+    Wywołuje funkcję `init()` inicjującą bazę, o ile zostało to wyszczególnione w konstruktorze klasy.
 
     _Wartość zwracana:_ `None`
 
@@ -87,7 +87,7 @@ Każda z funkcji może zwrócić albo żądaną wartość, albo wartość pustą
 
 - `new(data)`
 
-    Dodaje nowego pracownika `emp`, `newpasswd`, [`data`]. Jeżeli `admin` z hasłem `passwd` nie ma uprawnień do dodania pracownika, to rzucany jest wyjątek.
+    Dodaje nowego pracownika `emp`, `newpasswd`, [`data`]. Jeżeli `admin` z hasłem `passwd` nie ma uprawnień do dodawania pracownika, to rzucany jest wyjątek.
 
     _Wartość zwracana:_ `None`
     
@@ -95,13 +95,13 @@ Każda z funkcji może zwrócić albo żądaną wartość, albo wartość pustą
 
     Usuwa pracownika `emp` wraz z całym jego poddrzewem. Jeżeli `admin` z hasłem `passwd` nie ma uprawnień do usunięcia pracownika, to rzucany jest wyjątek.
 
-    `remove()` na poziomie sql zaimplenetowany jest jako prosta kwerenda _`DELETE FROM`_. Drzewo pod pracownikiem usuwa się samoczynnie poprzez _`ON DELETE CASCADE`_  założonym na odpowiednie atrybuty.
+    `remove()` na poziomie sql zaimplementowany jest jako prosta kwerenda _`DELETE FROM`_. Drzewo pod pracownikiem usuwa się samoczynnie poprzez _`ON DELETE CASCADE`_  założonym na odpowiednie atrybuty.
 
     _Wartość zwracana:_ `None`
 
 - `ancestors(data)`
 
-    Zwraca tablicę identyfikatorów pracowników, którym `emp` [nie] bezpośrendio podlega. Jeżeli `admin` z hasłem `passwd` nie ma uprawnień do tej operacji, to rzucany jest wyjątek. 
+    Zwraca tablicę identyfikatorów pracowników, którym `emp` [nie] bezpośrednio podlega. Jeżeli `admin` z hasłem `passwd` nie ma uprawnień do tej operacji, to rzucany jest wyjątek. 
 
     Na poziomie sql wybierany jest _array_, który zawiera ścieżkę od korzenia do danego pracownika (bez niego).
 
@@ -111,13 +111,13 @@ Każda z funkcji może zwrócić albo żądaną wartość, albo wartość pustą
 
     Sprawdza, czy `emp2` jest [nie] bezpośrednim przełożonym pracownika `emp1`. Jeżeli `admin` z hasłem `passwd` nie ma uprawnień do tej operacji, to rzucany jest wyjątek.
 
-    `ancestor()` wywołuje pomocniczą funkcę `is_superior`
+    `ancestor()` wywołuje pomocniczą funkcję `is_superior`
 
     _Wartość zwracana:_ `boolean`
 
 - `parent(data)`
 
-    Zwraca bezpośredniego pracownika `emp`. Szef firmy jako jedyny nie posiada takigo przełożonego - dla niego zwacany jest `NULL`. Jeżeli `admin` z hasłem `passwd` nie ma uprawnień do tej operacji, to rzucany jest wyjątek.
+    Zwraca bezpośredniego pracownika `emp`. Szef firmy jako jedyny nie posiada takiego przełożonego - dla niego zwracany jest `NULL`. Jeżeli `admin` z hasłem `passwd` nie ma uprawnień do tej operacji, to rzucany jest wyjątek.
 
     _Wartość zwracana:_ `int` lub `NULL` (dla szefa)
 
@@ -151,9 +151,9 @@ Każda z funkcji może zwrócić albo żądaną wartość, albo wartość pustą
 
     Sprawdza odpowiednie uprawnienia pracownika. Wyszczególnione zostały 3 poziomy uprawnień:
 
-    - __poziom 0.:__  `admin` wraz z poprawnym hasłem `pswd` jest dowlnym pracownikiem firmy
-    - __poziom 1.:__  `admin` wraz z poprawnym hasłem `pswd` jest dowlnym pracownikiem firmy oraz pracownik `sup` jest [pośrenim] przełożonym pracownika `emp`. Ten poziom używany jest tylko przy wywołaniu `remove`
-    - __poziom 2.:__  `admin` wraz z poprawnym hasłem `pswd` jest dowlnym pracownikiem firmy oraz pracownik `sup` jest [pośrenim] przełożonym pracownika `emp` lub `sup` i `emp` to ten sam pracownik 
+    - __poziom 0.:__  `admin` wraz z poprawnym hasłem `pswd` jest dowolnym pracownikiem firmy
+    - __poziom 1.:__  `admin` wraz z poprawnym hasłem `pswd` jest dowolnym pracownikiem firmy oraz pracownik `sup` jest [pośrednim] przełożonym pracownika `emp`. Ten poziom używany jest tylko przy wywołaniu `remove`
+    - __poziom 2.:__  `admin` wraz z poprawnym hasłem `pswd` jest dowolnym pracownikiem firmy oraz pracownik `sup` jest [pośrednim] przełożonym pracownika `emp` lub `sup` i `emp` to ten sam pracownik 
 
     Jeżeli na którymkolwiek poziomie autoryzacja nie powiedzie się, to rzucany jest wyjątek.
 
@@ -161,7 +161,7 @@ Każda z funkcji może zwrócić albo żądaną wartość, albo wartość pustą
 
 - `is_authorised(admin, pswd)`
 
-    Zwraca `true` wtedy i tylko wtedy, gdy `admin` jest pracownikiem firmy oraz podane zostałe prawidłowe hasło `pswd`.
+    Zwraca `true` wtedy i tylko wtedy, gdy `admin` jest pracownikiem firmy oraz podane zostało prawidłowe hasło `pswd`.
 
     _Wartość zwracana:_ `boolean`
 
@@ -195,7 +195,7 @@ Każda z funkcji może zwrócić albo żądaną wartość, albo wartość pustą
 
 - `handle_api_call(db, call, debug)`
 
-    Obsługuje wywołanie API `call` na adapterze bazy danych `db`. Zwraca `status_ok` w przypadku poprawnego obsłużenia wywołania. W przeciwnym wypadku, tj. został złapany wyjątek rzucony przez adapter, zwraca `status_error` z opcjonalną informacją o błędzię (o ile flaga `debug` jest utawiona na `true`).
+    Obsługuje wywołanie API `call` na adapterze bazy danych `db`. Zwraca `status_ok` w przypadku poprawnego obsłużenia wywołania. W przeciwnym wypadku, tj. został złapany wyjątek rzucony przez adapter, zwraca `status_error` z opcjonalną informacją o błędzie (o ile flaga `debug` jest ustawiona na `true`).
 
     _Wartość zwracana:_  `status_{ok | error}` :: `JSON`
 
@@ -213,7 +213,7 @@ Każda z funkcji może zwrócić albo żądaną wartość, albo wartość pustą
 
 - _main_
 
-    Tworzy instancję `DbAdapter` i parsuje argumenty wywołania programu. Czyta wywołania api, a następnie je obsługuje i przekazuje na standardowe wyście.
+    Tworzy instancję `DbAdapter` i parsuje argumenty wywołania programu. Czyta wywołania api, a następnie je obsługuje i przekazuje na standardowe wyjście.
 
     Dostępne argumenty wywołania programu:
 
