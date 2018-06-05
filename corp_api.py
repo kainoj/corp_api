@@ -82,9 +82,9 @@ class DbAdapter:
         return res[0]
     
     def ancestor(self, d):
-        admin, passwd, emp1, emp = d['admin'], d['passwd'], d['emp1'], d['emp']
+        admin, passwd, emp1, emp2 = d['admin'], d['passwd'], d['emp1'], d['emp2']
         self.authorise(admin=admin, pswd=passwd)
-        return self.is_superior(emp, emp1)
+        return self.is_superior(emp2, emp1)
 
     def parent(self, d):
         admin, passwd, emp = d['admin'], d['passwd'], d['emp']
@@ -248,7 +248,7 @@ if __name__ == '__main__':
                         '`open()` call must be the first function call. '\
                         'Note: db user must already exist.')
     parser.add_argument("-file", metavar="file",
-                        help='File from which api call will be read. ' \
+                        help='File from which api calls will be read. ' \
                         'If not specified, use stdio.')
     parser.add_argument('-debug', action='store_true', 
                         help='Show detailed information on error status')
