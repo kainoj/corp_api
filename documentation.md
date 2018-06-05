@@ -30,7 +30,9 @@ make clean
 ```
 
 ## Model fizyczny
-# [todo] zdjęcie
+
+![Diagram ER](misc/diagram.png)
+
 Ładowany przy pierwszym uruchimieniu aplikacji model fizyczny znajduje się w pliku `api_schema.sql`. Zdefiniowane są tam kolejno:
 - tabele `employee` oraz `pathfromroot`
 
@@ -42,7 +44,7 @@ make clean
     - `auth_emp(admin, pswd)` - zwraca `true` wtedy i tylko wtedy, gdy podane dane logowania pracownika są poprawne
     - `emp_exists(emp)` - zwraca `true` wtedy i tylko wtedy, gdy pracownik `emp` istnieje w bazie danych
 
-    szczegółowy opis wszystkich funkcji zajduje sie w części `Implementacja`
+    Szczegółowy opis wszystkich funkcji zajduje sie w części `Implementacja`
 
 ## Implementacja
 
