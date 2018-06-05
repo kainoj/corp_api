@@ -37,7 +37,8 @@ class DbAdapter:
 
     def root(self, d):
         secret = d['secret']
-        pswd, data, root_id =  d['newpassword'], d['data'], d['emp']
+        pswd, root_id =  d['newpassword'], d['emp']
+        data = d['data'] if 'data' in d else None
         self.conn.cursor().execute("SELECT create_root(%s, %s, %s, %s);", \
                                    (root_id, data, pswd, secret))
         self.conn.commit()
@@ -247,7 +248,7 @@ if __name__ == '__main__':
                         help='Create and initialize the corp database. '\
                         '`open()` call must be the first function call. '\
                         'Note: db user must already exist.')
-    parser.add_argument("-file", metavar="file",
+    parser.add_argument("-file", metavar="filename",
                         help='File from which api calls will be read. ' \
                         'If not specified, use stdio.')
     parser.add_argument('-debug', action='store_true', 
